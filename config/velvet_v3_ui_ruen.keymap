@@ -239,8 +239,12 @@
 &trackball { cpi = <1000>; };
 
 &trackball_listener {
-    input-processors = <&zip_xy_scaler 9 20>;
-    layers = <6>;
+    input-processors = <>;
+    
+    default {
+        layers = <6>;
+        input-processors = <&zip_xy_scaler 9 20>;
+    };
 
     scroller {
         layers = <7>;
