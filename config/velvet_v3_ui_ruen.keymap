@@ -239,6 +239,8 @@
 &trackball { cpi = <1000>; };
 
 &trackball_listener {    
+    input-processors = <&zip_xy_scaler 1 1>; 
+
     movement {
         layers = <6>;
         input-processors = <&zip_xy_scaler 9 20>;
