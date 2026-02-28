@@ -241,7 +241,7 @@
 &trackball_listener {
     input-processors = <>;
     
-    default {
+    movement {
         layers = <6>;
         input-processors = <&zip_xy_scaler 9 20>;
     };
