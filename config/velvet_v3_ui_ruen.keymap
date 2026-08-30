@@ -8,6 +8,43 @@
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/pointing.h>
 
+/* Layer indices, named so &mo/&to below aren't bare numbers. */
+#define L_EN_PC   0
+#define L_EN_MAC  1
+#define L_RU_PC   2
+#define L_RU_MAC  3
+#define L_NAV     4
+#define L_SYM_EN  5
+#define L_SYM_RU  6
+#define L_ADJ     7
+#define L_MOUSE   8
+#define L_SCROLL  9
+#define L_SNIPER  10
+
+/*
+ * Home row mod row, parameterized by which physical finger gets the
+ * primary ("Ctrl-like") vs secondary ("Cmd/Gui-like") modifier.
+ * PC:  primary=Control, secondary=Gui     (Windows/Linux: Ctrl is the shortcut modifier)
+ * Mac: primary=Gui,     secondary=Control (macOS: Cmd is the shortcut modifier)
+ * Swapping these two per OS keeps "the shortcut-modifier finger" the same
+ * physical key across all three systems.
+ */
+#define ROW2_EN(LP, LS, RS, RP) \
+    &kp TAB  &kp A  &hrm_left LP S  &hrm_left LEFT_ALT D  &hrm_left LS F  &kp G   &kp H  &hrm_right RS J  &hrm_right RIGHT_ALT K  &hrm_right RP L  &kp SEMI  &kp BSLH
+
+#define ROW2_RU(LP, LS, RS, RP) \
+    &kp TAB  &kp RU_CYRILLIC_EF  &hrm_left LP RU_CYRILLIC_YERU  &hrm_left LEFT_ALT RU_CYRILLIC_VE  &hrm_left LS RU_CYRILLIC_A  &kp RU_CYRILLIC_PE   &kp RU_CYRILLIC_ER  &hrm_right RS RU_CYRILLIC_O  &hrm_right RIGHT_ALT RU_CYRILLIC_EL  &hrm_right RP RU_CYRILLIC_DE  &kp RU_CYRILLIC_ZHE  &kp BSLH
+
+/* Cyrillic rows don't depend on OS mode, so ru_pc/ru_mac share these. */
+#define RU_ROW1 \
+    &kp ESC  &kp RU_CYRILLIC_SHORT_I  &kp RU_CYRILLIC_TSE  &kp RU_CYRILLIC_U  &kp RU_CYRILLIC_KA  &kp RU_CYRILLIC_IE   &kp RU_CYRILLIC_EN  &kp RU_CYRILLIC_GHE  &kp RU_CYRILLIC_SHA  &kp RU_CYRILLIC_SHCHA  &kp RU_CYRILLIC_ZE  &kp BSPC
+
+#define RU_ROW3 \
+    &kp LSHFT  &kp RU_CYRILLIC_YA  &kp RU_CYRILLIC_CHE  &kp RU_CYRILLIC_ES  &kp RU_CYRILLIC_EM  &kp RU_CYRILLIC_I   &kp RU_CYRILLIC_TE  &kp RU_CYRILLIC_SOFT_SIGN  &kp RU_CYRILLIC_BE  &kp RU_CYRILLIC_YU  &kp RU_CYRILLIC_E  &kp RSHFT
+
+#define RU_ROW4 \
+    &trans  &trans  &trans  &mo L_NAV  &kp SPACE    &kp RET  &mo L_SYM_RU  &none  &kp RU_CYRILLIC_HA  &kp RU_CYRILLIC_HARD_SIGN
+
 / {
     behaviors {
         cap_sen: cap_sen {
@@ -31,76 +68,155 @@
         zip_auto_mouse: zip_auto_mouse {
             compatible = "zmk,input-processor-temp-layer";
             #input-processor-cells = <2>;
-            require-prior-idle-ms = <800>;
+            require-prior-idle-ms = <150>;
             excluded-positions = <>;
+        };
+
+        hrm_left: hrm_left {
+            compatible = "zmk,behavior-hold-tap";
+            label = "HRM_LEFT";
+            bindings = <&kp>, <&kp>;
+
+            #binding-cells = <2>;
+            tapping-term-ms = <150>;
+            flavor = "balanced";
+        };
+
+        hrm_right: hrm_right {
+            compatible = "zmk,behavior-hold-tap";
+            label = "HRM_RIGHT";
+            bindings = <&kp>, <&kp>;
+
+            #binding-cells = <2>;
+            tapping-term-ms = <150>;
+            flavor = "balanced";
         };
     };
 
     combos {
         compatible = "zmk,combos";
 
-        cmben {
-            bindings = <&layer_en>;
+        cmbru_pc {
+            bindings = <&layer_ru_pc>;
             key-positions = <3 4>;
-            layers = <1>;
+            layers = <L_EN_PC>;
         };
 
-        cmbru {
-            bindings = <&layer_ru>;
+        cmbru_mac {
+            bindings = <&layer_ru_mac>;
             key-positions = <3 4>;
-            layers = <0>;
+            layers = <L_EN_MAC>;
+        };
+
+        cmben_pc {
+            bindings = <&layer_en_pc>;
+            key-positions = <3 4>;
+            layers = <L_RU_PC>;
+        };
+
+        cmben_mac {
+            bindings = <&layer_en_mac>;
+            key-positions = <3 4>;
+            layers = <L_RU_MAC>;
         };
     };
 
     macros {
-        to_ru: to_ru {
+        /* Single OS-level "switch input source" toggle, used everywhere a
+         * language change is needed. Since there are only two input
+         * languages (EN/RU), a toggle is deterministic. Bind this same
+         * Ctrl+Space combo as "select next input source" in every OS:
+         * it's already the macOS default, and configurable as a toggle on
+         * Windows (language bar / PowerToys) and Linux (ibus/fcitx). */
+        os_lang_toggle: os_lang_toggle {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&kp LS(LC(N2))>;
-            label = "TO_RU";
+            bindings = <&kp LC(SPACE)>;
+            label = "OS_LANG_TOGGLE";
             wait-ms = <0>;
             tap-ms = <30>;
         };
 
-        to_en: to_en {
+        layer_en_pc: layer_en_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&kp LS(LC(N1))>;
-            label = "TO_EN";
+            bindings = <&to L_EN_PC &os_lang_toggle>;
+            label = "LAYER_EN_PC";
             wait-ms = <0>;
             tap-ms = <30>;
         };
 
-        layer_en: layer_en {
+        layer_en_mac: layer_en_mac {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 0 &to_en>;
-            label = "LAYER_EN";
+            bindings = <&to L_EN_MAC &os_lang_toggle>;
+            label = "LAYER_EN_MAC";
             wait-ms = <0>;
             tap-ms = <30>;
         };
 
-        layer_ru: layer_ru {
+        layer_ru_pc: layer_ru_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 1 &to_ru>;
-            label = "LAYER_RU";
-            tap-ms = <30>;
+            bindings = <&to L_RU_PC &os_lang_toggle>;
+            label = "LAYER_RU_PC";
             wait-ms = <0>;
+            tap-ms = <30>;
         };
 
+        layer_ru_mac: layer_ru_mac {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&to L_RU_MAC &os_lang_toggle>;
+            label = "LAYER_RU_MAC";
+            wait-ms = <0>;
+            tap-ms = <30>;
+        };
+
+        /* Selecting a host also sets its OS-mods (Ctrl/Cmd swap comes from
+         * which base layer is active) and resets language to EN — &to is
+         * absolute, so the result never depends on prior state. */
+        bt_mac: bt_mac {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&bt BT_SEL 0 &to L_EN_MAC>;
+            label = "BT_MAC";
+            wait-ms = <0>;
+            tap-ms = <0>;
+        };
+
+        bt_win: bt_win {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&bt BT_SEL 1 &to L_EN_PC>;
+            label = "BT_WIN";
+            wait-ms = <0>;
+            tap-ms = <0>;
+        };
+
+        bt_lin: bt_lin {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&bt BT_SEL 2 &to L_EN_PC>;
+            label = "BT_LIN";
+            wait-ms = <0>;
+            tap-ms = <0>;
+        };
+
+        /* Symbols the RU layout has no keys for at all ({ } @ # $ ~ ^ & | [ ] < >):
+         * flip input source to EN, tap the symbol, flip back. */
         en: en {
             compatible = "zmk,behavior-macro-one-param";
             #binding-cells = <1>;
             bindings =
-                <&to_en>,
+                <&os_lang_toggle>,
                 <&macro_press>,
                 <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
                 <&macro_pause_for_release>,
                 <&macro_release>,
                 <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
                 <&macro_tap>,
-                <&to_ru>;
+                <&os_lang_toggle>;
 
             label = "EN";
             wait-ms = <0>;
@@ -111,33 +227,63 @@
     keymap {
         compatible = "zmk,keymap";
 
-        en {
+        en_pc {
             bindings = <
-&kp ESC    &kp Q  &kp W     &kp E     &kp R      &kp T                        &kp Y  &kp U  &kp I      &kp O     &kp P     &kp BSPC
-&kp TAB    &kp A  &kp S     &kp D     &kp F      &kp G                        &kp H  &kp J  &kp K      &kp L     &kp SEMI  &kp BSLH
-&kp LSHFT  &kp Z  &kp X     &kp C     &kp V      &kp B                        &kp N  &kp M  &kp COMMA  &kp DOT   &kp SQT   &kp RSHFT
-                  &kp LALT  &kp LGUI  &kp LCTRL  &mo 2  &kp SPACE    &kp RET  &mo 3  &none  &kp LBKT   &kp RBKT
+&kp ESC    &kp Q  &kp W  &kp E  &kp R  &kp T                        &kp Y  &kp U  &kp I  &kp O  &kp P  &kp BSPC
+ROW2_EN(LEFT_CONTROL, LEFT_COMMAND, RIGHT_COMMAND, RIGHT_CONTROL)
+&kp LSHFT  &kp Z  &kp X  &kp C  &kp V  &kp B                        &kp N  &kp M  &kp COMMA  &kp DOT  &kp SQT  &kp RSHFT
+                  &mkp MB3  &mkp MB2  &mkp MB1  &mo L_NAV  &kp SPACE    &kp RET  &mo L_SYM_EN  &none  &kp LBKT  &kp RBKT
             >;
 
-            display-name = "Base";
+            display-name = "EN";
         };
 
-        ru {
-            display-name = "Ru";
+        en_mac {
+            /* Only the home row mods differ from en_pc; everything else
+             * falls through (&trans) to layer 0 (en_pc), which is always
+             * implicitly active underneath whatever &to selects. */
             bindings = <
-&kp ESC    &kp RU_CYRILLIC_SHORT_I  &kp RU_CYRILLIC_TSE   &kp RU_CYRILLIC_U   &kp RU_CYRILLIC_KA  &kp RU_CYRILLIC_IE                        &kp RU_CYRILLIC_EN  &kp RU_CYRILLIC_GHE        &kp RU_CYRILLIC_SHA  &kp RU_CYRILLIC_SHCHA      &kp RU_CYRILLIC_ZE   &kp BSPC
-&kp TAB    &kp RU_CYRILLIC_EF       &kp RU_CYRILLIC_YERU  &kp RU_CYRILLIC_VE  &kp RU_CYRILLIC_A   &kp RU_CYRILLIC_PE                        &kp RU_CYRILLIC_ER  &kp RU_CYRILLIC_O          &kp RU_CYRILLIC_EL   &kp RU_CYRILLIC_DE         &kp RU_CYRILLIC_ZHE  &kp BSLH
-&kp LSHFT  &kp RU_CYRILLIC_YA       &kp RU_CYRILLIC_CHE   &kp RU_CYRILLIC_ES  &kp RU_CYRILLIC_EM  &kp RU_CYRILLIC_I                         &kp RU_CYRILLIC_TE  &kp RU_CYRILLIC_SOFT_SIGN  &kp RU_CYRILLIC_BE   &kp RU_CYRILLIC_YU         &kp RU_CYRILLIC_E    &kp RSHFT
-                                    &kp LALT              &kp LGUI            &kp LCTRL           &mo 2               &kp SPACE    &kp RET  &mo 4               &none                      &kp RU_CYRILLIC_HA   &kp RU_CYRILLIC_HARD_SIGN
+&trans  &trans  &trans  &trans  &trans  &trans                       &trans  &trans  &trans  &trans  &trans  &trans
+ROW2_EN(LEFT_COMMAND, LEFT_CONTROL, RIGHT_CONTROL, RIGHT_COMMAND)
+&trans  &trans  &trans  &trans  &trans  &trans                       &trans  &trans  &trans  &trans  &trans  &trans
+        &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans  &trans
             >;
+
+            display-name = "EN Mac";
+        };
+
+        ru_pc {
+            bindings = <
+RU_ROW1
+ROW2_RU(LEFT_CONTROL, LEFT_COMMAND, RIGHT_COMMAND, RIGHT_CONTROL)
+RU_ROW3
+RU_ROW4
+            >;
+
+            display-name = "RU";
+        };
+
+        ru_mac {
+            /* Cyrillic letter rows can't fall through to ru_pc (only layer
+             * 0 and the &to target are ever simultaneously active), so
+             * they're repeated here via the shared RU_ROW* macros — only
+             * the home row mods actually change. */
+            bindings = <
+RU_ROW1
+ROW2_RU(LEFT_COMMAND, LEFT_CONTROL, RIGHT_CONTROL, RIGHT_COMMAND)
+RU_ROW3
+RU_ROW4
+            >;
+
+            display-name = "RU Mac";
         };
 
         nav {
             bindings = <
-&trans  &kp N1  &kp N2    &kp N3   &kp N4   &kp N5                     &kp N6    &kp N7        &kp N8         &kp N9       &kp N0         &trans
-&trans  &trans  &trans    &trans   &trans   &kp RET                    &trans    &kp LEFT      &kp DOWN       &kp UP       &kp RIGHT      &trans
-&trans  &trans  &kp HOME  &kp INS  &kp END  &kp DEL                    &kp CLCK  &kp LC(LEFT)  &kp PAGE_DOWN  &kp PAGE_UP  &kp LC(RIGHT)  &trans
-                &trans    &trans   &trans   &trans   &trans    &trans  &mo 5     &trans        &trans         &trans
+&trans  &kp N1  &kp N2    &kp N3   &kp N4   &kp N5                     &kp N6    &kp N7         &kp N8       &kp N9     &kp N0  &trans
+&trans  &trans  &trans    &trans   &trans   &kp RET                    &kp LEFT  &kp DOWN       &kp UP       &kp RIGHT  &trans  &trans
+&trans  &trans  &kp HOME  &kp INS  &kp END  &kp DEL                    &kp CLCK  &kp PAGE_DOWN  &kp PAGE_UP  &trans     &trans  &trans
+                &trans    &trans   &trans   &trans   &trans    &trans  &mo L_ADJ &trans         &trans       &trans
             >;
 
             display-name = "Nav";
@@ -148,25 +294,26 @@
 &trans  &kp HASH   &kp LT    &kp EQUAL  &kp GT    &kp GRAVE                    &kp CARET  &kp DQT   &kp UNDER  &kp SQT   &trans    &trans
 &trans  &kp BSLH   &kp LPAR  &kp MINUS  &kp RPAR  &kp PLUS                     &kp PRCNT  &kp LBRC  &kp SEMI   &kp RBRC  &kp EXCL  &kp QUESTION
 &trans  &kp COMMA  &kp STAR  &kp COLON  &kp FSLH  &kp DLLR                     &kp AT     &kp PIPE  &kp TILDE  &kp AMPS  &kp DOT   &trans
-                   &trans    &trans     &trans    &mo 5      &trans    &trans  &trans     &trans    &kp LBKT   &kp RBKT
+                   &trans    &trans     &trans    &mo L_ADJ  &trans    &trans  &trans     &trans    &kp LBKT   &kp RBKT
             >;
 
             display-name = "Symbols";
         };
 
         sym_ru {
-            display-name = "Symbols";
             bindings = <
 &kp RU_CYRILLIC_IO  &en HASH          &en LT    &kp EQUAL     &en GT       &en GRAVE                    &en CARET  &kp RU_DQT  &kp UNDER    &en SQT   &trans      &trans
 &kp RU_NUMERO       &kp RU_BACKSLASH  &kp LPAR  &kp MINUS     &kp RPAR     &kp PLUS                     &kp PRCNT  &en LBRC    &kp RU_SEMI  &kp RBRC  &kp EXCL    &kp RU_QMARK
 &trans              &kp RU_COMMA      &kp STAR  &kp RU_COLON  &kp RU_FSLH  &en DLLR                     &en AT     &en PIPE    &en TILDE    &en AMPS  &kp RU_DOT  &trans
-                                      &trans    &trans        &trans       &mo 5      &trans    &trans  &trans     &trans      &en LBKT     &en RBKT
+                                      &trans    &trans        &trans       &mo L_ADJ  &trans    &trans  &trans     &trans      &en LBKT     &en RBKT
             >;
+
+            display-name = "Symbols";
         };
 
         adj {
             bindings = <
-&bootloader  &none  &kp F1  &kp F2   &kp F3   &kp F4                   &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2      &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR
+&bootloader  &none  &kp F1  &kp F2   &kp F3   &kp F4                   &bt_mac       &bt_win       &bt_lin           &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR
 &none        &none  &kp F5  &kp F6   &kp F7   &kp F8                   &out OUT_BLE  &kp C_VOL_DN  &kp C_MUTE        &kp C_VOL_UP  &none         &studio_unlock
 &none        &none  &kp F9  &kp F10  &kp F11  &kp F12                  &out OUT_USB  &kp C_PREV    &kp C_PLAY_PAUSE  &kp C_NEXT    &none         &none
                     &none   &none    &none    &none    &none    &none  &none         &none         &none             &none
@@ -177,10 +324,10 @@
 
         mouse {
             bindings = <
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-&trans  &mo 7   &mkp MB3  &mkp MB2  &mkp MB1  &mo 8                     &mo 8   &mkp MB1  &mkp MB2  &mkp MB3  &mo 7   &trans
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-                &trans    &trans    &trans    &trans  &trans    &trans  &trans  &trans    &trans    &trans
+&trans  &trans        &trans  &trans  &trans  &trans                       &trans        &trans  &trans  &trans  &trans        &trans
+&trans  &mo L_SCROLL  &trans  &trans  &trans  &mo L_SNIPER                 &mo L_SNIPER  &trans  &trans  &trans  &mo L_SCROLL  &trans
+&trans  &trans        &trans  &trans  &trans  &trans                       &trans        &trans  &trans  &trans  &trans        &trans
+                &mkp MB3  &mkp MB2  &mkp MB1  &trans  &trans    &trans  &trans  &trans  &trans  &trans
             >;
 
             display-name = "Mouse";
@@ -188,10 +335,10 @@
 
         scroll {
             bindings = <
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-&trans  &trans  &mkp MB3  &mkp MB2  &mkp MB1  &trans                    &trans  &mkp MB1  &mkp MB2  &mkp MB3  &trans  &trans
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-                &trans    &trans    &trans    &trans  &trans    &trans  &trans  &trans    &trans    &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+                &mkp MB3  &mkp MB2  &mkp MB1  &trans  &trans    &trans  &trans  &trans  &trans  &trans
             >;
 
             display-name = "Scroll";
@@ -199,10 +346,10 @@
 
         sniper {
             bindings = <
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-&trans  &trans  &mkp MB3  &mkp MB2  &mkp MB1  &trans                    &trans  &mkp MB1  &mkp MB2  &mkp MB3  &trans  &trans
-&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans    &trans    &trans    &trans  &trans
-                &trans    &trans    &trans    &trans  &trans    &trans  &trans  &trans    &trans    &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans    &trans    &trans    &trans                    &trans  &trans  &trans  &trans  &trans  &trans
+                &mkp MB3  &mkp MB2  &mkp MB1  &trans  &trans    &trans  &trans  &trans  &trans  &trans
             >;
 
             display-name = "Sniper";
@@ -213,10 +360,15 @@
 &trackball { cpi = <1000>; };
 
 &trackball_listener {
-    input-processors = <&zip_auto_mouse 6 500>, <&zip_xy_scaler 9 20>;
+    input-processors = <&zip_auto_mouse L_MOUSE 500>, <&zip_xy_scaler 9 20>;
+
+    movement {
+        layers = <L_MOUSE>;
+        input-processors = <&zip_xy_scaler 9 20>;
+    };
 
     scroller {
-        layers = <7>;
+        layers = <L_SCROLL>;
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&zip_xy_scaler 1 32>,
@@ -224,7 +376,7 @@
     };
 
     sniper {
-        layers = <8>;
+        layers = <L_SNIPER>;
         input-processors = <&zip_xy_scaler 1 4>;
     };
 };
