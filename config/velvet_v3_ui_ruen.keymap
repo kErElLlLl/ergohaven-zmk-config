@@ -12,11 +12,14 @@
  * Layers: 0 en_pc, 1 en_mac, 2 ru_pc, 3 ru_mac, 4 nav, 5 sym_en, 6 sym_ru,
  * 7 adj, 8 mouse, 9 scroll, 10 sniper.
  *
- * en_pc/en_mac and ru_pc/ru_mac differ only in which home-row finger gets
- * Control vs Gui(Cmd): PC keeps Control on S/L (primary shortcut modifier
- * on Windows/Linux); Mac swaps it onto F/J instead (primary shortcut
- * modifier there is Cmd). That keeps "the shortcut-modifier finger" the
- * same physical key on every OS.
+ * en_pc/en_mac and ru_pc/ru_mac differ only in home-row mods. The primary
+ * shortcut modifier sits under the index finger on every OS:
+ *   Mac: ring=Ctrl  middle=Opt  index=Cmd
+ *   PC:  ring=Alt   middle=Win  index=Ctrl
+ *
+ * Language is selected absolutely, never toggled: F18 = EN, F19 = RU.
+ * macOS maps them to input sources via Karabiner-Elements
+ * (select_input_source); Windows/Linux need an equivalent F18/F19 binding.
  */
 
 / {
@@ -96,25 +99,10 @@
     };
 
     macros {
-        /* Single OS-level "switch input source" toggle, used everywhere a
-         * language change is needed. Since there are only two input
-         * languages (EN/RU), a toggle is deterministic. Bind this same
-         * Ctrl+Space combo as "select next input source" in every OS:
-         * it's already the macOS default, and configurable as a toggle on
-         * Windows (language bar / PowerToys) and Linux (ibus/fcitx). */
-        os_lang_toggle: os_lang_toggle {
-            compatible = "zmk,behavior-macro";
-            #binding-cells = <0>;
-            bindings = <&kp LC(SPACE)>;
-            label = "OS_LANG_TOGGLE";
-            wait-ms = <0>;
-            tap-ms = <30>;
-        };
-
         layer_en_pc: layer_en_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 0 &os_lang_toggle>;
+            bindings = <&to 0 &kp F18>;
             label = "LAYER_EN_PC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -123,7 +111,7 @@
         layer_en_mac: layer_en_mac {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 1 &os_lang_toggle>;
+            bindings = <&to 1 &kp F18>;
             label = "LAYER_EN_MAC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -132,7 +120,7 @@
         layer_ru_pc: layer_ru_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 2 &os_lang_toggle>;
+            bindings = <&to 2 &kp F19>;
             label = "LAYER_RU_PC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -141,7 +129,7 @@
         layer_ru_mac: layer_ru_mac {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 3 &os_lang_toggle>;
+            bindings = <&to 3 &kp F19>;
             label = "LAYER_RU_MAC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -153,28 +141,28 @@
         bt_mac: bt_mac {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&bt BT_SEL 0 &to 1>;
+            bindings = <&bt BT_SEL 0 &to 1 &kp F18>;
             label = "BT_MAC";
             wait-ms = <0>;
-            tap-ms = <0>;
+            tap-ms = <30>;
         };
 
         bt_win: bt_win {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&bt BT_SEL 1 &to 0>;
+            bindings = <&bt BT_SEL 1 &to 0 &kp F18>;
             label = "BT_WIN";
             wait-ms = <0>;
-            tap-ms = <0>;
+            tap-ms = <30>;
         };
 
         bt_lin: bt_lin {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&bt BT_SEL 2 &to 0>;
+            bindings = <&bt BT_SEL 2 &to 0 &kp F18>;
             label = "BT_LIN";
             wait-ms = <0>;
-            tap-ms = <0>;
+            tap-ms = <30>;
         };
 
         /* Symbols the RU layout has no keys for at all ({ } @ # $ ~ ^ & | [ ] < >):
@@ -183,14 +171,17 @@
             compatible = "zmk,behavior-macro-one-param";
             #binding-cells = <1>;
             bindings =
-                <&os_lang_toggle>,
+                <&kp F18>,
+                /* macOS switches input source asynchronously; without this
+                 * the symbol lands before the switch and comes out Cyrillic. */
+                <&macro_wait_time 100>,
                 <&macro_press>,
                 <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
                 <&macro_pause_for_release>,
                 <&macro_release>,
                 <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
                 <&macro_tap>,
-                <&os_lang_toggle>;
+                <&kp F19>;
 
             label = "EN";
             wait-ms = <0>;
@@ -204,7 +195,7 @@
         en_pc {
             bindings = <
 &kp ESC    &kp Q  &kp W                     &kp E                 &kp R                     &kp T                        &kp Y  &kp U                       &kp I                   &kp O                       &kp P     &kp BSPC
-&kp TAB    &kp A  &hrm_left LEFT_CONTROL S  &hrm_left LEFT_ALT D  &hrm_left LEFT_COMMAND F  &kp G                        &kp H  &hrm_right RIGHT_COMMAND J  &hrm_right RIGHT_ALT K  &hrm_right RIGHT_CONTROL L  &kp SEMI  &kp BSLH
+&kp TAB    &kp A  &hrm_left LEFT_ALT S  &hrm_left LEFT_COMMAND D  &hrm_left LEFT_CONTROL F  &kp G                        &kp H  &hrm_right RIGHT_CONTROL J  &hrm_right RIGHT_COMMAND K  &hrm_right RIGHT_ALT L  &kp SEMI  &kp BSLH
 &kp LSHFT  &kp Z  &kp X                     &kp C                 &kp V                     &kp B                        &kp N  &kp M                       &kp COMMA               &kp DOT                     &kp SQT   &kp RSHFT
                   &mkp MB3                  &mkp MB2              &mkp MB1                  &mo 4  &kp SPACE    &kp RET  &mo 5  &none                       &kp LBKT                &kp RBKT
             >;
@@ -215,7 +206,7 @@
         en_mac {
             bindings = <
 &trans     &trans  &trans                    &trans                &trans                    &trans                       &trans  &trans                      &trans                  &trans                      &trans    &trans
-&trans     &trans  &hrm_left LEFT_COMMAND S  &hrm_left LEFT_ALT D  &hrm_left LEFT_CONTROL F  &trans                       &trans  &hrm_right RIGHT_CONTROL J  &hrm_right RIGHT_ALT K  &hrm_right RIGHT_COMMAND L  &trans    &trans
+&trans     &trans  &hrm_left LEFT_CONTROL S  &hrm_left LEFT_ALT D  &hrm_left LEFT_COMMAND F  &trans                       &trans  &hrm_right RIGHT_COMMAND J  &hrm_right RIGHT_ALT K  &hrm_right RIGHT_CONTROL L  &trans    &trans
 &trans     &trans  &trans                    &trans                &trans                    &trans                       &trans  &trans                      &trans                  &trans                      &trans    &trans
                    &trans                    &trans                &trans                    &trans &trans       &trans   &trans &trans                      &trans                  &trans
             >;
@@ -226,7 +217,7 @@
         ru_pc {
             bindings = <
 &kp ESC    &kp RU_CYRILLIC_SHORT_I  &kp RU_CYRILLIC_TSE                      &kp RU_CYRILLIC_U                  &kp RU_CYRILLIC_KA                    &kp RU_CYRILLIC_IE                        &kp RU_CYRILLIC_EN  &kp RU_CYRILLIC_GHE                     &kp RU_CYRILLIC_SHA                  &kp RU_CYRILLIC_SHCHA                    &kp RU_CYRILLIC_ZE   &kp BSPC
-&kp TAB    &kp RU_CYRILLIC_EF       &hrm_left LEFT_CONTROL RU_CYRILLIC_YERU  &hrm_left LEFT_ALT RU_CYRILLIC_VE  &hrm_left LEFT_COMMAND RU_CYRILLIC_A  &kp RU_CYRILLIC_PE                        &kp RU_CYRILLIC_ER  &hrm_right RIGHT_COMMAND RU_CYRILLIC_O  &hrm_right RIGHT_ALT RU_CYRILLIC_EL  &hrm_right RIGHT_CONTROL RU_CYRILLIC_DE  &kp RU_CYRILLIC_ZHE  &kp BSLH
+&kp TAB    &kp RU_CYRILLIC_EF       &hrm_left LEFT_ALT RU_CYRILLIC_YERU  &hrm_left LEFT_COMMAND RU_CYRILLIC_VE  &hrm_left LEFT_CONTROL RU_CYRILLIC_A  &kp RU_CYRILLIC_PE                        &kp RU_CYRILLIC_ER  &hrm_right RIGHT_CONTROL RU_CYRILLIC_O  &hrm_right RIGHT_COMMAND RU_CYRILLIC_EL  &hrm_right RIGHT_ALT RU_CYRILLIC_DE  &kp RU_CYRILLIC_ZHE  &kp BSLH
 &kp LSHFT  &kp RU_CYRILLIC_YA       &kp RU_CYRILLIC_CHE                      &kp RU_CYRILLIC_ES                 &kp RU_CYRILLIC_EM                    &kp RU_CYRILLIC_I                         &kp RU_CYRILLIC_TE  &kp RU_CYRILLIC_SOFT_SIGN               &kp RU_CYRILLIC_BE                   &kp RU_CYRILLIC_YU                       &kp RU_CYRILLIC_E    &kp RSHFT
                                     &trans                                   &trans                             &trans                                &mo 4                &kp SPACE    &kp RET  &mo 6                &none                                   &kp RU_CYRILLIC_HA                   &kp RU_CYRILLIC_HARD_SIGN
             >;
@@ -237,7 +228,7 @@
         ru_mac {
             bindings = <
 &kp ESC    &kp RU_CYRILLIC_SHORT_I  &kp RU_CYRILLIC_TSE                      &kp RU_CYRILLIC_U                  &kp RU_CYRILLIC_KA                    &kp RU_CYRILLIC_IE                        &kp RU_CYRILLIC_EN  &kp RU_CYRILLIC_GHE                     &kp RU_CYRILLIC_SHA                  &kp RU_CYRILLIC_SHCHA                    &kp RU_CYRILLIC_ZE   &kp BSPC
-&kp TAB    &kp RU_CYRILLIC_EF       &hrm_left LEFT_COMMAND RU_CYRILLIC_YERU  &hrm_left LEFT_ALT RU_CYRILLIC_VE  &hrm_left LEFT_CONTROL RU_CYRILLIC_A  &kp RU_CYRILLIC_PE                        &kp RU_CYRILLIC_ER  &hrm_right RIGHT_CONTROL RU_CYRILLIC_O  &hrm_right RIGHT_ALT RU_CYRILLIC_EL  &hrm_right RIGHT_COMMAND RU_CYRILLIC_DE  &kp RU_CYRILLIC_ZHE  &kp BSLH
+&kp TAB    &kp RU_CYRILLIC_EF       &hrm_left LEFT_CONTROL RU_CYRILLIC_YERU  &hrm_left LEFT_ALT RU_CYRILLIC_VE  &hrm_left LEFT_COMMAND RU_CYRILLIC_A  &kp RU_CYRILLIC_PE                        &kp RU_CYRILLIC_ER  &hrm_right RIGHT_COMMAND RU_CYRILLIC_O  &hrm_right RIGHT_ALT RU_CYRILLIC_EL  &hrm_right RIGHT_CONTROL RU_CYRILLIC_DE  &kp RU_CYRILLIC_ZHE  &kp BSLH
 &kp LSHFT  &kp RU_CYRILLIC_YA       &kp RU_CYRILLIC_CHE                      &kp RU_CYRILLIC_ES                 &kp RU_CYRILLIC_EM                    &kp RU_CYRILLIC_I                         &kp RU_CYRILLIC_TE  &kp RU_CYRILLIC_SOFT_SIGN               &kp RU_CYRILLIC_BE                   &kp RU_CYRILLIC_YU                       &kp RU_CYRILLIC_E    &kp RSHFT
                                     &trans                                   &trans                             &trans                                &mo 4                &kp SPACE    &kp RET  &mo 6                &none                                   &kp RU_CYRILLIC_HA                   &kp RU_CYRILLIC_HARD_SIGN
             >;
