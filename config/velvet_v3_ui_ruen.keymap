@@ -171,10 +171,11 @@
             compatible = "zmk,behavior-macro-one-param";
             #binding-cells = <1>;
             bindings =
-                <&kp F18>,
                 /* macOS switches input source asynchronously; without this
-                 * the symbol lands before the switch and comes out Cyrillic. */
+                 * the symbol lands before the switch and comes out Cyrillic.
+                 * Must precede F18: wait-time applies after each later step. */
                 <&macro_wait_time 100>,
+                <&kp F18>,
                 <&macro_press>,
                 <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
                 <&macro_pause_for_release>,
