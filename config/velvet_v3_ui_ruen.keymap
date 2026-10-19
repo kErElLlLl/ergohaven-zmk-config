@@ -10,7 +10,7 @@
 
 /*
  * Layers: 0 en_pc, 1 en_mac, 2 ru_pc, 3 ru_mac, 4 nav, 5 sym_en, 6 sym_ru,
- * 7 adj, 8 mouse, 9 scroll, 10 sniper.
+ * 7 adj, 8 mouse, 9 scroll, 10 sniper, 11 sym_ru_win (conditional).
  *
  * en_pc/en_mac and ru_pc/ru_mac differ only in home-row mods. The primary
  * shortcut modifier sits under the index finger on every OS:
@@ -19,7 +19,8 @@
  *
  * Language is selected absolutely, never toggled: F18 = EN, F19 = RU.
  * macOS maps them to input sources via Karabiner-Elements
- * (select_input_source); Windows/Linux need an equivalent F18/F19 binding.
+ * (select_input_source). PC layers instead send Ctrl+Shift+1 = EN,
+ * Ctrl+Shift+2 = RU: Windows' native per-layout hotkeys.
  */
 
 / {
@@ -102,7 +103,7 @@
         layer_en_pc: layer_en_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 0 &kp F18>;
+            bindings = <&to 0 &kp LC(LS(N1))>;
             label = "LAYER_EN_PC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -120,7 +121,7 @@
         layer_ru_pc: layer_ru_pc {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&to 2 &kp F19>;
+            bindings = <&to 2 &kp LC(LS(N2))>;
             label = "LAYER_RU_PC";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -150,7 +151,7 @@
         bt_win: bt_win {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&bt BT_SEL 1 &to 0 &kp F18>;
+            bindings = <&bt BT_SEL 1 &to 0 &kp LC(LS(N1))>;
             label = "BT_WIN";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -159,7 +160,7 @@
         bt_lin: bt_lin {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&bt BT_SEL 2 &to 0 &kp F18>;
+            bindings = <&bt BT_SEL 2 &to 0 &kp LC(LS(N1))>;
             label = "BT_LIN";
             wait-ms = <0>;
             tap-ms = <30>;
@@ -173,7 +174,7 @@
             bindings =
                 /* macOS switches input source asynchronously; without this
                  * the symbol lands before the switch and comes out Cyrillic.
-                 * Must precede F18: wait-time applies after each later step. */
+                 * Must precede the switch: wait-time applies after each later step. */
                 <&macro_wait_time 100>,
                 <&kp F18>,
                 <&macro_press>,
@@ -187,6 +188,39 @@
             label = "EN";
             wait-ms = <0>;
             tap-ms = <30>;
+        };
+
+        /* Same as &en, for ru_pc: Windows has native per-layout hotkeys. */
+        en_win: en_win {
+            compatible = "zmk,behavior-macro-one-param";
+            #binding-cells = <1>;
+            bindings =
+                /* macOS switches input source asynchronously; without this
+                 * the symbol lands before the switch and comes out Cyrillic.
+                 * Must precede the switch: wait-time applies after each later step. */
+                <&macro_wait_time 100>,
+                <&kp LC(LS(N1))>,
+                <&macro_press>,
+                <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
+                <&macro_pause_for_release>,
+                <&macro_release>,
+                <&macro_param_1to1 &kp MACRO_PLACEHOLDER>,
+                <&macro_tap>,
+                <&kp LC(LS(N2))>;
+
+            label = "EN_WIN";
+            wait-ms = <0>;
+            tap-ms = <30>;
+        };
+    };
+
+    conditional_layers {
+        compatible = "zmk,conditional-layers";
+
+        /* ru_pc + sym_ru -> sym_ru_win: swaps &en for &en_win on PC. */
+        sym_ru_win {
+            if-layers = <2 6>;
+            then-layer = <11>;
         };
     };
 
@@ -312,6 +346,17 @@
             >;
 
             display-name = "Sniper";
+        };
+
+        sym_ru_win {
+            bindings = <
+&trans  &en_win HASH  &en_win LT  &trans  &en_win GT  &en_win GRAVE  &en_win CARET  &trans  &trans  &en_win SQT  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &en_win LBRC  &trans  &en_win RBRC  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &en_win DLLR  &en_win AT  &en_win PIPE  &en_win TILDE  &en_win AMPS  &trans  &trans
+                                      &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &en_win LBKT  &en_win RBKT
+            >;
+
+            display-name = "Symbols";
         };
     };
 };
